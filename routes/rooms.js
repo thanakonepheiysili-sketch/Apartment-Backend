@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const db = require("../config/db");
 const { auth } = require("../middleware/auth");
-const { roomUpload, uploadDir } = require("../middleware/upload");
+const { roomUpload, iconUpload, uploadDir } = require("../middleware/upload");
 const { recordPaymentAndResetBill } = require("../utils/payment");
 
 const router = express.Router();
@@ -11,17 +11,19 @@ const router = express.Router();
 const toBool = (v) =>
   v === true || v === 1 || v === "1" || String(v).toLowerCase() === "true" ? 1 : 0;
 
-// discount_price is optional — null / "" clears the promotion,
-// anything else must be numeric and lower than the room's price
-function resolveDiscount(value, price) {
-  if (value === null || String(value).trim() === "") return { value: null };
-  const discount = Number(value);
-  if (Number.isNaN(discount))
-    return { error: "discount_price must be a number" };
-  if (discount >= Number(price))
-    return { error: "discount_price must be lower than price" };
-  return { value: discount };
+// multipart fields are always strings — reject "" / "abc" before Number() turns them into 0 / NaN
+const isNumeric = (v) => v !== "" && v !== null && Number.isFinite(Number(v));
+
+// size / bedrooms / bathrooms are optional, but must be numbers when they are sent
+function validateNumbers(body) {
+  for (const key of ["size", "bedrooms", "bathrooms"]) {
+    if (body[key] !== undefined && !isNumeric(body[key])) return `${key} must be a number`;
+  }
+  return null;
 }
+
+// keeps the stored value when the field is left out of the request
+const keep = (value, current) => (value !== undefined ? Number(value) : current);
 
 function deleteFile(relPath) {
   if (!relPath) return;
@@ -29,12 +31,20 @@ function deleteFile(relPath) {
   if (fs.existsSync(full)) fs.unlinkSync(full);
 }
 
-// [GET] /api/admin/rooms -> cover, images, name, roomType, available, price, discount_price, create_date
+// a rejected request must not leave its uploaded files behind
+function deleteUploaded(req) {
+  deleteFile(req.files?.cover?.[0] && "/uploads/" + req.files.cover[0].filename);
+  (req.files?.images || []).forEach((f) => deleteFile("/uploads/" + f.filename));
+}
+
+// [GET] /api/admin/rooms -> every card field + images + amenities
 router.get("/", auth, (req, res) => {
   const imgStmt = db.prepare("SELECT path FROM room_images WHERE room_id = ?");
+  const amenityStmt = db.prepare("SELECT id, icon, name FROM room_amenities WHERE room_id = ?");
   const rooms = db
     .prepare(
-      `SELECT id, cover, name, roomType, available, price, discount_price, status, create_date
+      `SELECT id, cover, code, name, descriptions, address, price, size, bedrooms, bathrooms,
+              phone, whatsapp, roomType, available, status, create_date
        FROM rooms ORDER BY create_date DESC`
     )
     .all()
@@ -42,41 +52,54 @@ router.get("/", auth, (req, res) => {
       ...r,
       available: !!r.available,
       images: imgStmt.all(r.id).map((i) => i.path),
+      amenities: amenityStmt.all(r.id),
     }));
   res.json({ success: true, data: rooms });
 });
 
 // [POST] /api/admin/rooms  (multipart/form-data)
-// fields: name, descriptions, price, discount_price, roomType(0|1), status(0|1), available(bool)
+// fields: name, code, descriptions, address, price, size, bedrooms, bathrooms, phone, whatsapp,
+//         roomType(0|1), status(0|1), available(bool)
 // files: cover (1), images (max 3)
 router.post("/", auth, (req, res) => {
   roomUpload(req, res, (err) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
 
-    const { name, descriptions, price, discount_price, roomType, status, available } = req.body;
-    if (!name) return res.status(400).json({ success: false, message: "name is required" });
+    const { name, code, descriptions, address, price, size, bedrooms, bathrooms, phone, whatsapp,
+      roomType, status, available } = req.body;
 
-    const roomPrice = price || "0";
-    let discount = null;
-    if (discount_price !== undefined) {
-      const result = resolveDiscount(discount_price, roomPrice);
-      if (result.error) return res.status(400).json({ success: false, message: result.error });
-      discount = result.value;
+    if (!name) {
+      deleteUploaded(req);
+      return res.status(400).json({ success: false, message: "name is required" });
     }
 
+    const invalid = validateNumbers(req.body);
+    if (invalid) {
+      deleteUploaded(req);
+      return res.status(400).json({ success: false, message: invalid });
+    }
+
+    const roomPrice = price || "0";
     const cover = req.files?.cover?.[0] ? "/uploads/" + req.files.cover[0].filename : null;
 
     const info = db
       .prepare(
-        `INSERT INTO rooms (cover, name, descriptions, price, discount_price, roomType, status, available)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO rooms (cover, code, name, descriptions, address, price, size, bedrooms,
+                            bathrooms, phone, whatsapp, roomType, status, available)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         cover,
+        code || null,
         name,
         descriptions || "",
+        address || null,
         roomPrice,
-        discount,
+        keep(size, null),
+        keep(bedrooms, null),
+        keep(bathrooms, null),
+        phone || null,
+        whatsapp || null,
         Number(roomType) === 1 ? 1 : 0,
         Number(status) === 1 ? 1 : 0,
         toBool(available)
@@ -101,20 +124,22 @@ router.put("/:id", auth, (req, res) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
 
     const room = db.prepare("SELECT * FROM rooms WHERE id = ?").get(req.params.id);
-    if (!room) return res.status(404).json({ success: false, message: "Room not found" });
+    if (!room) {
+      deleteUploaded(req);
+      return res.status(404).json({ success: false, message: "Room not found" });
+    }
 
     const body = req.body;
+    const invalid = validateNumbers(body);
+    if (invalid) {
+      deleteUploaded(req);
+      return res.status(400).json({ success: false, message: invalid });
+    }
+
     const oldStatus = room.status;
     const newStatus = body.status !== undefined ? (Number(body.status) === 1 ? 1 : 0) : room.status;
 
-    // validate against the incoming price when it is being changed in the same request
     const newPrice = body.price ?? room.price;
-    let discount = room.discount_price;
-    if (body.discount_price !== undefined) {
-      const result = resolveDiscount(body.discount_price, newPrice);
-      if (result.error) return res.status(400).json({ success: false, message: result.error });
-      discount = result.value;
-    }
 
     let cover = room.cover;
     if (req.files?.cover?.[0]) {
@@ -123,14 +148,21 @@ router.put("/:id", auth, (req, res) => {
     }
 
     db.prepare(
-      `UPDATE rooms SET cover = ?, name = ?, descriptions = ?, price = ?, discount_price = ?,
+      `UPDATE rooms SET cover = ?, code = ?, name = ?, descriptions = ?, address = ?, price = ?,
+       size = ?, bedrooms = ?, bathrooms = ?, phone = ?, whatsapp = ?,
        roomType = ?, status = ?, available = ? WHERE id = ?`
     ).run(
       cover,
+      body.code ?? room.code,
       body.name ?? room.name,
       body.descriptions ?? room.descriptions,
+      body.address ?? room.address,
       newPrice,
-      discount,
+      keep(body.size, room.size),
+      keep(body.bedrooms, room.bedrooms),
+      keep(body.bathrooms, room.bathrooms),
+      body.phone ?? room.phone,
+      body.whatsapp ?? room.whatsapp,
       body.roomType !== undefined ? (Number(body.roomType) === 1 ? 1 : 0) : room.roomType,
       newStatus,
       body.available !== undefined ? toBool(body.available) : room.available,
@@ -165,9 +197,55 @@ router.delete("/:id", auth, (req, res) => {
   db.prepare("SELECT path FROM room_images WHERE room_id = ?")
     .all(room.id)
     .forEach((i) => deleteFile(i.path));
+  db.prepare("SELECT icon FROM room_amenities WHERE room_id = ?")
+    .all(room.id)
+    .forEach((a) => deleteFile(a.icon));
 
-  db.prepare("DELETE FROM rooms WHERE id = ?").run(room.id); // cascades to images/tenant/lease/bill
+  // cascades to images/amenities/tenant/lease/bill
+  db.prepare("DELETE FROM rooms WHERE id = ?").run(room.id);
   res.json({ success: true, message: "Room deleted" });
+});
+
+// ----- Amenities — one icon + label at a time, kept out of the room multipart -----
+
+// [POST] /api/admin/rooms/:id/amenities  (multipart/form-data)
+// field: name   file: icon (1)
+router.post("/:id/amenities", auth, (req, res) => {
+  iconUpload(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+
+    const icon = req.file ? "/uploads/" + req.file.filename : null;
+    const room = db.prepare("SELECT id FROM rooms WHERE id = ?").get(req.params.id);
+
+    if (!room) {
+      deleteFile(icon);
+      return res.status(404).json({ success: false, message: "Room not found" });
+    }
+
+    const name = (req.body.name || "").trim();
+    if (!name) {
+      deleteFile(icon);
+      return res.status(400).json({ success: false, message: "name is required" });
+    }
+
+    const info = db
+      .prepare("INSERT INTO room_amenities (room_id, icon, name) VALUES (?, ?, ?)")
+      .run(room.id, icon, name);
+
+    res.status(201).json({ success: true, data: { id: info.lastInsertRowid, icon, name } });
+  });
+});
+
+// [DELETE] /api/admin/rooms/:id/amenities/:amenityId
+router.delete("/:id/amenities/:amenityId", auth, (req, res) => {
+  const amenity = db
+    .prepare("SELECT * FROM room_amenities WHERE id = ? AND room_id = ?")
+    .get(req.params.amenityId, req.params.id);
+  if (!amenity) return res.status(404).json({ success: false, message: "Amenity not found" });
+
+  deleteFile(amenity.icon);
+  db.prepare("DELETE FROM room_amenities WHERE id = ?").run(amenity.id);
+  res.json({ success: true, message: "Amenity deleted" });
 });
 
 module.exports = router;

@@ -35,4 +35,11 @@ const bannerUpload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 }).single("image");
 
-module.exports = { roomUpload, bannerUpload, uploadDir };
+// room amenity: 1 icon
+const iconUpload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("icon");
+
+module.exports = { roomUpload, bannerUpload, iconUpload, uploadDir };

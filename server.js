@@ -21,9 +21,10 @@ app.use("/api/admin", require("./routes/auth"));           // login + user manag
 app.use("/api/admin/dashboard", require("./routes/dashboard"));
 app.use("/api/admin/rooms", require("./routes/rooms"));    // manage website rooms
 app.use("/api/admin/banners", require("./routes/banners"));
-app.use("/api/admin/locations", require("./routes/locations"));
 app.use("/api/admin/report", require("./routes/report"));
 app.use("/api/admin/contact", require("./routes/contact"));
+app.use("/api/admin/contact-messages", require("./routes/contact-messages"));
+app.use("/api/admin/customers", require("./routes/customers"));   // CRM leads + contact history
 
 app.get("/", (req, res) =>
   res.json({ success: true, message: "Apartment Booking API is running" })

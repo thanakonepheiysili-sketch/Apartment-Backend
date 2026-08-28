@@ -1,0 +1,2296 @@
+{
+  "info": {
+    "_postman_id": "3f8c2a41-6b7d-4e59-9c10-5a2e8d4f7b60",
+    "name": "Apartment Booking API",
+    "description": "REST API ของโปรเจกต์ apartment-api-main ครบทุก endpoint\n\n**วิธีใช้**\n1. ตั้งค่า `base_url` (default `http://localhost:3000`) ใน tab Variables\n2. ยิง ****4. Admin - Login & Users → Login**** หนึ่งครั้ง — test script จะเซฟ token เข้า `{{token}}` ให้เอง\n3. request ใน Admin ทุกตัว inherit Bearer `{{token}}` มาจาก collection ไม่ต้องกรอกเอง\n\n**หมายเหตุ**\n- request ใน Public ตั้ง auth เป็น No Auth ทับไว้ ไม่ต้องใช้ token\n- field ที่เป็น file ใน multipart ต้องกดเลือกไฟล์เองใน Postman (path ผูกกับเครื่องแต่ละคน)\n- request ที่ลงท้ายด้วย (400) เป็นเคสเทสที่ตั้งใจให้ error\n- response ทุกอันมีรูปแบบ `{ success, data }` หรือ `{ success, message }`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Public - Rooms",
+      "description": "ห้องพักที่แสดงบนเว็บไซต์",
+      "item": [
+        {
+          "name": "Get All Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rooms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rooms"
+              ]
+            },
+            "description": "ห้องทั้งหมด เรียงใหม่→เก่า\n\nคืน field การ์ดห้อง: id, cover, code, name, roomType, available, price, descriptions, address, size, bedrooms, bathrooms\n(ไม่มี phone/whatsapp — อยู่เฉพาะหน้า detail)",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Latest Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rooms/latest",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "latest"
+              ]
+            },
+            "description": "3 ห้องล่าสุด (ถ้ามีน้อยกว่า 3 ก็คืนเท่าที่มี)\n\nต้องประกาศเหนือ /rooms/:id ไม่งั้น Express จะจับ \"latest\" เป็น :id",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Recommended Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rooms/recommended",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                "recommended"
+              ]
+            },
+            "description": "3 ห้องสุ่ม เฉพาะห้องที่ว่าง (available = 1)",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/rooms/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "rooms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "รายละเอียดห้อง 1 ห้อง\n\nเพิ่มจากหน้า list: phone, whatsapp (ปุ่มโทร/WhatsApp), images[], amenities[] และ tel/link จาก About Us\n\nไม่เจอ → 404",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Public - Banners",
+      "description": "แบนเนอร์ เฉพาะที่เปิดใช้งาน (status = 1)",
+      "item": [
+        {
+          "name": "Get Banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "banners"
+              ]
+            },
+            "description": "แบนเนอร์ทั้งหมดที่ status = 1\n\nคืน id, type, topic, image, link_url เรียง display_order ASC, create_date DESC\nตัวที่ปิด (status = 0) จะไม่โผล่ที่นี่ ต้องดูผ่านฝั่ง admin",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Banners - Home Page (type=0)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/banners?type=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "0",
+                  "description": "0 = หน้า home"
+                }
+              ]
+            },
+            "description": "กรองเฉพาะแบนเนอร์หน้า home",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Banners - Rooms Page (type=1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/banners?type=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "1",
+                  "description": "1 = หน้า rooms"
+                }
+              ]
+            },
+            "description": "กรองเฉพาะแบนเนอร์หน้า rooms",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Banners - Invalid type (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/banners?type=5",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "5",
+                  "description": "ค่าที่ไม่ใช่ 0 หรือ 1"
+                }
+              ]
+            },
+            "description": "เคสเทส: type ที่ไม่ใช่ 0|1 ต้องได้ 400 \"type must be 0 or 1\"",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Public - Contact & Form",
+      "description": "About Us และฟอร์มติดต่อจากลูกค้า",
+      "item": [
+        {
+          "name": "Get Contact (About Us)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contact"
+              ]
+            },
+            "description": "ข้อมูล About Us: tel, email, address, link (map link)\n\nยังไม่มีข้อมูล → 404",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Contact Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/contact-messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contact-messages"
+              ]
+            },
+            "description": "ฟอร์มติดต่อจากหน้าเว็บ ไม่ต้อง login → 201 { success: true }\n\nname, phone จำเป็น (trim แล้วห้ามว่าง)\ntopic, detail ไม่บังคับ\nความยาว: name/phone/topic ≤ 200, detail ≤ 2000\n\nข้อมูลที่ส่งมาอ่าน/ลบได้เฉพาะ admin",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"สมชาย ใจดี\",\n  \"phone\": \"081-234-5678\",\n  \"topic\": \"สอบถามห้องว่าง\",\n  \"detail\": \"สนใจห้อง A-01 ครับ ว่างเดือนหน้าไหม\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Contact Message - Missing name (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/contact-messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contact-messages"
+              ]
+            },
+            "description": "เคสเทส: ไม่ส่ง name → 400 \"name is required\"",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"081-234-5678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit Contact Message - Blank phone (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/contact-messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contact-messages"
+              ]
+            },
+            "description": "เคสเทส: phone มีแต่ช่องว่าง → 400 \"phone is required\" (trim ก่อนเช็ค)",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"สมชาย\",\n  \"phone\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Admin - Login & Users",
+      "description": "login และจัดการผู้ใช้ (POST/GET/PUT/DELETE users เป็น admin only)",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "login"
+              ]
+            },
+            "description": "login แล้ว **เซฟ token เข้าตัวแปร {{token}} อัตโนมัติ** ผ่าน test script\n\nยิงอันนี้ก่อนอันอื่นเสมอ request ที่เหลือ inherit Bearer {{token}} มาจาก collection\n\ntoken อายุ 1 วัน / รหัสผิด → 401",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0201234567\",\n  \"password\": \"admin123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const res = pm.response.json();",
+                  "",
+                  "if (res.token) {",
+                  "    pm.collectionVariables.set(\"token\", res.token);",
+                  "    console.log(\"token saved to {{token}}\");",
+                  "}",
+                  "",
+                  "pm.test(\"login สำเร็จ\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    pm.expect(res.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test(\"ได้ token กลับมา\", function () {",
+                  "    pm.expect(res.token).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "รายชื่อผู้ใช้ทั้งหมด (admin only — role owner จะได้ 403)"
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users"
+              ]
+            },
+            "description": "สร้างผู้ใช้ role owner (admin only)\n\nเบอร์ซ้ำ → 409 \"Phone already exists\"",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0209999999\",\n  \"password\": \"owner123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "2",
+                  "description": "id ของผู้ใช้"
+                }
+              ]
+            },
+            "description": "แก้ผู้ใช้ ทุก field optional (admin only)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"0208888888\",\n  \"password\": \"newpass123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/users/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "users",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "2",
+                  "description": "id ของผู้ใช้"
+                }
+              ]
+            },
+            "description": "ลบผู้ใช้ (admin only) — ลบ account admin ไม่ได้"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Admin - Dashboard",
+      "description": "ตัวเลขสรุปหน้าแรกของ admin",
+      "item": [
+        {
+          "name": "Get Dashboard (all)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard"
+              ]
+            },
+            "description": "รวมทุกอย่างใน call เดียว: totalApartments, availableApartments, notPaidApartments, paidApartments, occupancyRate (%), incomeThisMonth, outstanding, incomeHistory (6 เดือนล่าสุด), expiringLeases (ภายใน 30 วัน), topOverdue (5 อันดับ), recentPayments (5 ล่าสุด), roomTypeBreakdown, totalTenants"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Total Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard/total",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "total"
+              ]
+            },
+            "description": "จำนวนห้องทั้งหมด"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard/available",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "available"
+              ]
+            },
+            "description": "จำนวนห้องที่ว่าง"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Not Paid Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard/not-paid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "not-paid"
+              ]
+            },
+            "description": "จำนวนห้องที่ยังไม่จ่าย"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Paid Rooms",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/dashboard/paid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "dashboard",
+                "paid"
+              ]
+            },
+            "description": "จำนวนห้องที่จ่ายแล้ว"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Admin - Rooms (+ Amenities)",
+      "description": "จัดการห้องพัก (multipart/form-data) + สิ่งอำนวยความสะดวก",
+      "item": [
+        {
+          "name": "Get All Rooms (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms"
+              ]
+            },
+            "description": "ห้องทั้งหมดพร้อม field ครบ + images[] + amenities[] + status + create_date"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Room",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms"
+              ]
+            },
+            "description": "สร้างห้องใหม่ (multipart/form-data)\n\nต้องมี name อย่างน้อย / size, bedrooms, bathrooms ถ้าส่งต้องเป็นตัวเลข\nระบบจะสร้างแถว bills เปล่าให้ห้องนี้ด้วยอัตโนมัติ\n\nถ้า validate ไม่ผ่าน ไฟล์ที่เพิ่งอัปโหลดจะถูกลบทิ้งให้",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Deluxe Studio",
+                  "type": "text",
+                  "description": "(required ตอนสร้าง) ชื่อห้อง"
+                },
+                {
+                  "key": "code",
+                  "value": "A-01",
+                  "type": "text",
+                  "description": "(optional) รหัสห้องที่โชว์บนการ์ด"
+                },
+                {
+                  "key": "descriptions",
+                  "value": "Cozy studio near BTS",
+                  "type": "text",
+                  "description": "(optional)"
+                },
+                {
+                  "key": "address",
+                  "value": "99/1 Sukhumvit Rd, Bangkok",
+                  "type": "text",
+                  "description": "(optional) ที่อยู่ของห้อง"
+                },
+                {
+                  "key": "price",
+                  "value": "8500",
+                  "type": "text",
+                  "description": "(optional) ราคา เก็บเป็น text"
+                },
+                {
+                  "key": "size",
+                  "value": "32.5",
+                  "type": "text",
+                  "description": "(optional) ขนาด ตร.ม. ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "bedrooms",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "bathrooms",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "phone",
+                  "value": "02-555-1234",
+                  "type": "text",
+                  "description": "(optional) เบอร์ปุ่มโทรของห้องนี้"
+                },
+                {
+                  "key": "whatsapp",
+                  "value": "+66812345678",
+                  "type": "text",
+                  "description": "(optional) เบอร์ปุ่ม WhatsApp"
+                },
+                {
+                  "key": "roomType",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(optional) 0 หรือ 1"
+                },
+                {
+                  "key": "status",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(optional) 0 = ยังไม่จ่าย, 1 = จ่ายแล้ว"
+                },
+                {
+                  "key": "available",
+                  "value": "true",
+                  "type": "text",
+                  "description": "(optional) รับ true/false/1/0"
+                },
+                {
+                  "key": "cover",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) รูปปก 1 ไฟล์ ≤5MB — รูปใหม่จะลบรูปเดิมทิ้ง"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) รูปแกลเลอรี สูงสุด 3 ไฟล์ — อัปใหม่จะแทนที่ทั้งชุด"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "แก้ห้อง ทุก field optional — ไม่ส่งอันไหนใช้ค่าเดิม (untick field ที่ไม่ใช้ออกได้เลย)\n\ncover ใหม่ลบไฟล์เดิม / images ใหม่แทนที่ทั้งแกลเลอรี\nstatus 0 → 1 จะบันทึกบิลลง payments แล้ว reset บิล\n\nไม่เจอ id → 404",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Deluxe Studio",
+                  "type": "text",
+                  "description": "(required ตอนสร้าง) ชื่อห้อง"
+                },
+                {
+                  "key": "code",
+                  "value": "A-01",
+                  "type": "text",
+                  "description": "(optional) รหัสห้องที่โชว์บนการ์ด"
+                },
+                {
+                  "key": "descriptions",
+                  "value": "Cozy studio near BTS",
+                  "type": "text",
+                  "description": "(optional)"
+                },
+                {
+                  "key": "address",
+                  "value": "99/1 Sukhumvit Rd, Bangkok",
+                  "type": "text",
+                  "description": "(optional) ที่อยู่ของห้อง"
+                },
+                {
+                  "key": "price",
+                  "value": "8500",
+                  "type": "text",
+                  "description": "(optional) ราคา เก็บเป็น text"
+                },
+                {
+                  "key": "size",
+                  "value": "32.5",
+                  "type": "text",
+                  "description": "(optional) ขนาด ตร.ม. ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "bedrooms",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "bathrooms",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) ต้องเป็นตัวเลข ไม่งั้น 400"
+                },
+                {
+                  "key": "phone",
+                  "value": "02-555-1234",
+                  "type": "text",
+                  "description": "(optional) เบอร์ปุ่มโทรของห้องนี้"
+                },
+                {
+                  "key": "whatsapp",
+                  "value": "+66812345678",
+                  "type": "text",
+                  "description": "(optional) เบอร์ปุ่ม WhatsApp"
+                },
+                {
+                  "key": "roomType",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(optional) 0 หรือ 1"
+                },
+                {
+                  "key": "status",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(optional) 0 = ยังไม่จ่าย, 1 = จ่ายแล้ว"
+                },
+                {
+                  "key": "available",
+                  "value": "true",
+                  "type": "text",
+                  "description": "(optional) รับ true/false/1/0"
+                },
+                {
+                  "key": "cover",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) รูปปก 1 ไฟล์ ≤5MB — รูปใหม่จะลบรูปเดิมทิ้ง"
+                },
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) รูปแกลเลอรี สูงสุด 3 ไฟล์ — อัปใหม่จะแทนที่ทั้งชุด"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room - Invalid size (400)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "เคสเทส: size ไม่ใช่ตัวเลข → 400 \"size must be a number\"",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "size",
+                  "value": "abc",
+                  "type": "text",
+                  "description": "ค่าที่ไม่ใช่ตัวเลข"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Room",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "ลบห้อง — cascade ลบ images, amenities, tenant, lease, bill และลบไฟล์รูปทั้งหมดใน uploads/ ด้วย"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Amenity",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id/amenities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id",
+                "amenities"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "เพิ่มสิ่งอำนวยความสะดวกทีละอัน (แยกจาก multipart ของห้องเพื่อความง่าย)\n\nname ห้ามว่าง → 400 / ห้องไม่มีจริง → 404\nถ้า fail ไฟล์ icon ที่อัปโหลดแล้วจะถูกลบทิ้ง",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Wi-Fi",
+                  "type": "text",
+                  "description": "(required) ชื่อสิ่งอำนวยความสะดวก ห้ามว่าง"
+                },
+                {
+                  "key": "icon",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) ไฟล์ icon 1 ไฟล์ ≤5MB"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Amenity",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id/amenities/:amenityId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id",
+                "amenities",
+                ":amenityId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                },
+                {
+                  "key": "amenityId",
+                  "value": "1",
+                  "description": "id ของ amenity"
+                }
+              ]
+            },
+            "description": "ลบสิ่งอำนวยความสะดวก + ลบไฟล์ icon\n\nถ้า amenity ไม่ได้อยู่ในห้องนั้น → 404 (กันลบข้ามห้อง)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Admin - Banners",
+      "description": "จัดการแบนเนอร์ (multipart/form-data)",
+      "item": [
+        {
+          "name": "Get All Banners (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners"
+              ]
+            },
+            "description": "แบนเนอร์ทั้งหมด **รวมตัวที่ปิดอยู่ (status = 0)**\n\nคืนทุก field + create_date เรียง display_order ASC, create_date DESC"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Banners - Rooms Page (type=1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners?type=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "1",
+                  "description": "0 = home, 1 = rooms"
+                }
+              ]
+            },
+            "description": "เคสเทส: กรองด้วย type ฝั่ง admin"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Banner",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners"
+              ]
+            },
+            "description": "สร้างแบนเนอร์ ต้องมี type และไฟล์ image\n\nขาดอย่างใดอย่างหนึ่ง → 400 และไฟล์ที่อัปโหลดแล้วถูกลบทิ้ง",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(required ตอนสร้าง) 0 = หน้า home, 1 = หน้า rooms"
+                },
+                {
+                  "key": "topic",
+                  "value": "Promotion 20%",
+                  "type": "text",
+                  "description": "(optional) หัวข้อ banner"
+                },
+                {
+                  "key": "link_url",
+                  "value": "https://example.com/promotion",
+                  "type": "text",
+                  "description": "(optional) ลิงก์ปลายทางเมื่อคลิก"
+                },
+                {
+                  "key": "display_order",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) เลขน้อยแสดงก่อน default 0 ต้องเป็นตัวเลข"
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) 1 = เปิดใช้งาน (default), 0 = ปิด"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "(required ตอนสร้าง) รูป 1 ไฟล์ ≤5MB"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Banner",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของแบนเนอร์"
+                }
+              ]
+            },
+            "description": "แก้แบนเนอร์ ทุก field optional — image ใหม่จะลบไฟล์เดิมทิ้ง\n\nไม่เจอ id → 404",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "type",
+                  "value": "0",
+                  "type": "text",
+                  "description": "(required ตอนสร้าง) 0 = หน้า home, 1 = หน้า rooms"
+                },
+                {
+                  "key": "topic",
+                  "value": "Promotion 20%",
+                  "type": "text",
+                  "description": "(optional) หัวข้อ banner"
+                },
+                {
+                  "key": "link_url",
+                  "value": "https://example.com/promotion",
+                  "type": "text",
+                  "description": "(optional) ลิงก์ปลายทางเมื่อคลิก"
+                },
+                {
+                  "key": "display_order",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) เลขน้อยแสดงก่อน default 0 ต้องเป็นตัวเลข"
+                },
+                {
+                  "key": "status",
+                  "value": "1",
+                  "type": "text",
+                  "description": "(optional) 1 = เปิดใช้งาน (default), 0 = ปิด"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [],
+                  "description": "(required ตอนสร้าง) รูป 1 ไฟล์ ≤5MB"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Banner - Hide (status=0)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของแบนเนอร์"
+                }
+              ]
+            },
+            "description": "เคสเทส: ปิดแบนเนอร์ แล้วมันต้องหายจาก GET /api/banners ฝั่ง public แต่ยังเห็นในฝั่ง admin",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "status",
+                  "value": "0",
+                  "type": "text",
+                  "description": "0 = ปิด"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Banner",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/banners/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "banners",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของแบนเนอร์"
+                }
+              ]
+            },
+            "description": "ลบแบนเนอร์ + ลบไฟล์รูปใน uploads/"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Admin - About Us",
+      "description": "ข้อมูลติดต่อของอพาร์ตเมนต์ — มีแถวเดียว ไม่มี :id",
+      "item": [
+        {
+          "name": "Get Contact",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact"
+              ]
+            },
+            "description": "ดูข้อมูล About Us / ยังไม่มี → 404"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Contact",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact"
+              ]
+            },
+            "description": "สร้างแถว About Us\n\nมีอยู่แล้ว → 409 ให้ใช้ PUT แทน",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tel\": \"02-555-1234\",\n  \"email\": \"contact@apartment.co.th\",\n  \"address\": \"99/1 ถนนสุขุมวิท แขวงคลองเตย กรุงเทพฯ 10110\",\n  \"link\": \"https://maps.app.goo.gl/abc123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Contact",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact"
+              ]
+            },
+            "description": "แก้ About Us ทุก field optional — ไม่ส่งอันไหนใช้ค่าเดิม\n\nยังไม่มีแถว → 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tel\": \"02-555-9999\",\n  \"email\": \"info@apartment.co.th\",\n  \"address\": \"55 ถนนพระราม 4 กรุงเทพฯ 10500\",\n  \"link\": \"https://maps.app.goo.gl/xyz789\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Contact",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact"
+              ]
+            },
+            "description": "ลบแถว About Us / ไม่มี → 404"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Admin - Contact Messages",
+      "description": "กล่องข้อความจากฟอร์มหน้าเว็บ — อ่านกับลบเท่านั้น ไม่มี POST/PUT",
+      "item": [
+        {
+          "name": "Get All Messages",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact-messages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact-messages"
+              ]
+            },
+            "description": "ข้อความทั้งหมด เรียง create_date DESC, id DESC (ใหม่สุดก่อนเสมอแม้ส่งมาในวินาทีเดียวกัน)"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Message",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/contact-messages/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "contact-messages",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของข้อความ"
+                }
+              ]
+            },
+            "description": "ลบข้อความ / ไม่เจอ → 404 \"Message not found\""
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10. Admin - Customers (CRM)",
+      "description": "จัดการลูกค้า/ลีด + บันทึกการติดต่อ — admin เท่านั้น ไม่มีฝั่ง public",
+      "item": [
+        {
+          "name": "Get All Customers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ]
+            },
+            "description": "ลูกค้าทั้งหมด เรียง create_date DESC, id DESC"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers - New (status=0)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers?status=0",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "0",
+                  "description": "0 = ใหม่"
+                }
+              ]
+            },
+            "description": "เคสเทส: กรองเฉพาะลูกค้าใหม่"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers - In Progress (status=1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers?status=1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "1",
+                  "description": "1 = กำลังติดต่อ"
+                }
+              ]
+            },
+            "description": "เคสเทส: กรองเฉพาะที่กำลังติดต่อ"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers - Closed (status=2)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers?status=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "2",
+                  "description": "2 = ปิดการขายแล้ว"
+                }
+              ]
+            },
+            "description": "เคสเทส: กรองเฉพาะที่ปิดการขายแล้ว"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customers - Invalid status (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers?status=9",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "9",
+                  "description": "ค่าที่ไม่ใช่ 0|1|2"
+                }
+              ]
+            },
+            "description": "เคสเทส: status นอกช่วง → 400 \"status must be 0, 1 or 2\""
+          },
+          "response": []
+        },
+        {
+          "name": "Get Customer Detail (+ logs)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของลูกค้า"
+                }
+              ]
+            },
+            "description": "ลูกค้า 1 คน + logs ทั้งหมดของคนนั้น เรียงใหม่→เก่า\n\nไม่เจอ → 404"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ]
+            },
+            "description": "สร้างลูกค้าใหม่\n\nname จำเป็น (trim แล้วห้ามว่าง)\nstatus ถ้าส่งต้องเป็น 0|1|2 (default 0)\nfirst_contact / next_appointment ถ้าส่งต้องเป็นวันที่จริงรูปแบบ YYYY-MM-DD\nroom_interest เก็บเป็น text เฉยๆ ไม่ผูก FK เพื่อไม่พังเมื่อห้องถูกลบ",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"สมชาย ใจดี\",\n  \"phone\": \"081-111-1111\",\n  \"channel\": \"Website\",\n  \"room_interest\": \"ห้อง A01\",\n  \"first_contact\": \"2026-08-01\",\n  \"next_appointment\": \"2026-09-05\",\n  \"assigned_to\": \"แอดมินหนึ่ง\",\n  \"status\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Customer - Invalid date (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers"
+              ]
+            },
+            "description": "เคสเทส: วันที่ไม่มีอยู่จริง → 400 \"first_contact must be a valid date (YYYY-MM-DD)\"\n(เช็คด้วยการ round-trip ไม่ใช่แค่ Date.parse ซึ่งจะม้วน 30 ก.พ. ไปเป็น 2 มี.ค.)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Test\",\n  \"first_contact\": \"2026-02-30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของลูกค้า"
+                }
+              ]
+            },
+            "description": "แก้ลูกค้า ทุก field optional — ไม่ส่งอันไหนใช้ค่าเดิม\n\nไม่เจอ → 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1,\n  \"next_appointment\": \"2026-10-01\",\n  \"assigned_to\": \"แอดมินสอง\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers/:id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers",
+                ":id"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของลูกค้า"
+                }
+              ]
+            },
+            "description": "ลบลูกค้า — customer_logs ของคนนั้นหายตามด้วย (cascade)"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Customer Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers/:id/logs",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers",
+                ":id",
+                "logs"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของลูกค้า"
+                }
+              ]
+            },
+            "description": "เพิ่มบันทึกการติดต่อ เพิ่มได้เรื่อยๆ\n\nnote ห้ามว่าง → 400 / ลูกค้าไม่มีจริง → 404",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"โทรครั้งแรก ลูกค้าสนใจห้อง A01 นัดดูห้อง 5 ก.ย.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Customer Log",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/customers/:id/logs/:logId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "customers",
+                ":id",
+                "logs",
+                ":logId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของลูกค้า"
+                },
+                {
+                  "key": "logId",
+                  "value": "1",
+                  "description": "id ของ log"
+                }
+              ]
+            },
+            "description": "ลบบันทึก 1 รายการ\n\nถ้า log ไม่ได้อยู่ของลูกค้าคนนั้น → 404 (กันลบข้ามคน)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Admin - Reports",
+      "description": "ผู้เช่า สัญญาเช่า และบิลรายเดือน",
+      "item": [
+        {
+          "name": "Get Unpaid Report",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/unpaid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "unpaid"
+              ]
+            },
+            "description": "ห้องที่ยังไม่จ่าย: name, leaseTime, overdue (จำนวนเดือน), status\n\noverdue คำนวณตอนอ่านจาก lastPaidDate (หรือวันเริ่มสัญญาถ้ายังไม่เคยจ่าย) ไม่ได้เก็บใน DB"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Room Payment Status",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "เปลี่ยนสถานะจ่ายเงิน 0 = ยังไม่จ่าย, 1 = จ่ายแล้ว\n\nเปลี่ยนจาก 0 → 1 จะบันทึกบิลปัจจุบันลงตาราง payments แล้ว reset บิลเป็น 0 พร้อมบันทึก lastPaidDate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/tenant",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "tenant"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "เพิ่มผู้เช่าให้ห้อง (1 ห้อง 1 ผู้เช่า) — link ส่ง null ได้",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"สมชาย\",\n  \"lastname\": \"ใจดี\",\n  \"tel\": \"081-234-5678\",\n  \"link\": \"https://wa.me/66812345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/tenant",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "tenant"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "แก้ข้อมูลผู้เช่า",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"สมชาย\",\n  \"lastname\": \"ใจดีมาก\",\n  \"tel\": \"081-999-9999\",\n  \"link\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/tenant",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "tenant"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "ลบผู้เช่าออกจากห้อง"
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Leases",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/leases",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "leases"
+              ]
+            },
+            "description": "สัญญาเช่าทั้งหมด: roomID, name, startDate, endDate"
+          },
+          "response": []
+        },
+        {
+          "name": "Add Lease",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/lease",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "lease"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "สร้างสัญญาเช่า (1 ห้อง 1 สัญญา)\n\nรูปแบบ YYYY-MM-DD / endDate ต้องหลัง startDate ไม่งั้น 400",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2026-09-01\",\n  \"endDate\": \"2027-08-31\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Lease",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/lease",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "lease"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "แก้/รีเซ็ตวันที่สัญญา ส่งมาเฉพาะอันที่จะเปลี่ยนได้",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startDate\": \"2026-10-01\",\n  \"endDate\": \"2027-09-30\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Set Monthly Bill",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/bill",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "bill"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "ตั้งรายละเอียดค่าใช้จ่ายเดือนปัจจุบัน\n\ntotal คำนวณฝั่ง server ไม่รับจาก client",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roomPrice\": 4000,\n  \"electricityPrice\": 500,\n  \"waterPrice\": 200,\n  \"wasteFees\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Room Full Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/report/rooms/:id/info",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "report",
+                "rooms",
+                ":id",
+                "info"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "รวมข้อมูลห้อง: tenant {name, lastname, phone}, rentalPeriod (จำนวนวัน), startDate, endDate, priceDetail {roomPrice, electricityPrice, waterPrice, wasteFees, total}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Health Check",
+      "description": "เช็คว่า server ตอบอยู่ไหม",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "GET / → { success: true, message: \"Apartment Booking API is running\" }",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
