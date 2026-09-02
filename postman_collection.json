@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "3f8c2a41-6b7d-4e59-9c10-5a2e8d4f7b60",
     "name": "Apartment Booking API",
-    "description": "REST API ของโปรเจกต์ apartment-api-main ครบทุก endpoint\n\n**วิธีใช้**\n1. ตั้งค่า `base_url` (default `http://localhost:3000`) ใน tab Variables\n2. ยิง ****4. Admin - Login & Users → Login**** หนึ่งครั้ง — test script จะเซฟ token เข้า `{{token}}` ให้เอง\n3. request ใน Admin ทุกตัว inherit Bearer `{{token}}` มาจาก collection ไม่ต้องกรอกเอง\n\n**หมายเหตุ**\n- request ใน Public ตั้ง auth เป็น No Auth ทับไว้ ไม่ต้องใช้ token\n- field ที่เป็น file ใน multipart ต้องกดเลือกไฟล์เองใน Postman (path ผูกกับเครื่องแต่ละคน)\n- request ที่ลงท้ายด้วย (400) เป็นเคสเทสที่ตั้งใจให้ error\n- response ทุกอันมีรูปแบบ `{ success, data }` หรือ `{ success, message }`",
+    "description": "REST API ของโปรเจกต์ apartment-api-main ครบทุก endpoint\n\n**วิธีใช้**\n1. ตั้งค่า `base_url` (default `http://localhost:3000`) ใน tab Variables\n2. ยิง ****4. Admin - Login & Users → Login**** หนึ่งครั้ง — test script จะเซฟ token เข้า `{{token}}` ให้เอง\n3. request ใน Admin ทุกตัว inherit Bearer `{{token}}` มาจาก collection ไม่ต้องกรอกเอง\n\n**หมายเหตุ**\n- request ใน Public ตั้ง auth เป็น No Auth ทับไว้ ไม่ต้องใช้ token\n- field ที่เป็น file ใน multipart ต้องกดเลือกไฟล์เองใน Postman (path ผูกกับเครื่องแต่ละคน)\n- request ที่ลงท้ายด้วย (400) / (404) เป็นเคสเทสที่ตั้งใจให้ error\n- response ทุกอันมีรูปแบบ `{ success, data }` หรือ `{ success, message }`",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -111,7 +111,7 @@
                 }
               ]
             },
-            "description": "รายละเอียดห้อง 1 ห้อง\n\nเพิ่มจากหน้า list: phone, whatsapp (ปุ่มโทร/WhatsApp), images[], amenities[] และ tel/link จาก About Us\n\nไม่เจอ → 404",
+            "description": "รายละเอียดห้อง 1 ห้อง\n\nเพิ่มจากหน้า list: phone, whatsapp (ปุ่มโทร/WhatsApp), images[], amenities[] (id, icon, name, amount) และ tel/link จาก About Us\n\nไม่เจอ → 404",
             "auth": {
               "type": "noauth"
             }
@@ -675,7 +675,7 @@
     },
     {
       "name": "6. Admin - Rooms (+ Amenities)",
-      "description": "จัดการห้องพัก (multipart/form-data) + สิ่งอำนวยความสะดวก",
+      "description": "จัดการห้องพัก (multipart/form-data) + สิ่งอำนวยความสะดวก (icon + name + amount)",
       "item": [
         {
           "name": "Get All Rooms (Admin)",
@@ -693,7 +693,7 @@
                 "rooms"
               ]
             },
-            "description": "ห้องทั้งหมดพร้อม field ครบ + images[] + amenities[] + status + create_date"
+            "description": "ห้องทั้งหมดพร้อม field ครบ + images[] + amenities[] (id, icon, name, amount) + status + create_date"
           },
           "response": []
         },
@@ -1027,21 +1027,177 @@
                 }
               ]
             },
-            "description": "เพิ่มสิ่งอำนวยความสะดวกทีละอัน (แยกจาก multipart ของห้องเพื่อความง่าย)\n\nname ห้ามว่าง → 400 / ห้องไม่มีจริง → 404\nถ้า fail ไฟล์ icon ที่อัปโหลดแล้วจะถูกลบทิ้ง",
+            "description": "เพิ่มสิ่งอำนวยความสะดวกทีละอัน (แยกจาก multipart ของห้องเพื่อความง่าย)\n\nname ห้ามว่าง → 400 / ห้องไม่มีจริง → 404\namount เป็น optional ถ้าส่งต้องเป็นจำนวนเต็ม ≥ 1 ไม่งั้น 400 / ไม่ส่งเก็บเป็น NULL\nถ้า fail ไฟล์ icon ที่อัปโหลดแล้วจะถูกลบทิ้ง",
             "body": {
               "mode": "formdata",
               "formdata": [
                 {
                   "key": "name",
-                  "value": "Wi-Fi",
+                  "value": "Air Conditioner",
                   "type": "text",
                   "description": "(required) ชื่อสิ่งอำนวยความสะดวก ห้ามว่าง"
+                },
+                {
+                  "key": "amount",
+                  "value": "2",
+                  "type": "text",
+                  "description": "(optional) จำนวนที่มีในห้อง ต้องเป็นจำนวนเต็ม ≥ 1 ไม่ส่ง = NULL"
                 },
                 {
                   "key": "icon",
                   "type": "file",
                   "src": [],
                   "description": "(optional) ไฟล์ icon 1 ไฟล์ ≤5MB"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Add Amenity - Invalid amount (400)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id/amenities",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id",
+                "amenities"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                }
+              ]
+            },
+            "description": "เคสเทส: amount ไม่ใช่จำนวนเต็มบวก → 400 \"amount must be a positive integer\"\n\nโดนแบบเดียวกันหมด: abc, -1, 0, 1.5 — ลองเปลี่ยนค่าในช่อง amount ดูได้\nไฟล์ icon ที่อัปมาพร้อมกันจะถูกลบทิ้ง ไม่ค้างใน uploads/",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Air Conditioner",
+                  "type": "text",
+                  "description": "(required) ชื่อสิ่งอำนวยความสะดวก"
+                },
+                {
+                  "key": "amount",
+                  "value": "abc",
+                  "type": "text",
+                  "description": "ค่าที่ไม่ใช่จำนวนเต็มบวก"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Amenity",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id/amenities/:amenityId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id",
+                "amenities",
+                ":amenityId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "id ของห้อง"
+                },
+                {
+                  "key": "amenityId",
+                  "value": "1",
+                  "description": "id ของ amenity"
+                }
+              ]
+            },
+            "description": "แก้สิ่งอำนวยความสะดวกที่มีอยู่ — icon, name, amount ทุก field optional\nไม่ส่ง field ไหนใช้ค่าเดิม (untick ช่องที่ไม่ใช้ออกได้เลย)\n\nอัป icon ใหม่ → ลบไฟล์ icon เดิมทิ้งให้\namount ถ้าส่งต้องเป็นจำนวนเต็ม ≥ 1 ไม่งั้น 400 และของเดิมไม่ถูกแก้\n\namenity ต้องสังกัดห้องตาม :id จริง ไม่งั้น 404 (กันแก้ข้ามห้อง)",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Air Conditioner",
+                  "type": "text",
+                  "description": "(optional) ชื่อใหม่ ห้ามว่าง"
+                },
+                {
+                  "key": "amount",
+                  "value": "3",
+                  "type": "text",
+                  "description": "(optional) จำนวนใหม่ ต้องเป็นจำนวนเต็ม ≥ 1"
+                },
+                {
+                  "key": "icon",
+                  "type": "file",
+                  "src": [],
+                  "description": "(optional) icon ใหม่ — ไฟล์เดิมจะถูกลบทิ้ง"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Amenity - Wrong room (404)",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/admin/rooms/:id/amenities/:amenityId",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "rooms",
+                ":id",
+                "amenities",
+                ":amenityId"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "2",
+                  "description": "id ของ **ห้องอื่น** ที่ไม่ได้เป็นเจ้าของ amenity นี้"
+                },
+                {
+                  "key": "amenityId",
+                  "value": "1",
+                  "description": "id ของ amenity ที่อยู่คนละห้อง"
+                }
+              ]
+            },
+            "description": "เคสเทส: amenity ไม่ได้สังกัดห้องตาม :id → 404 \"Amenity not found\"\n\nตั้ง :id เป็นห้องที่ไม่ได้เป็นเจ้าของ amenity นี้\nไฟล์ icon ที่อัปมาพร้อมกันจะถูกลบทิ้ง ไม่ค้างใน uploads/",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "amount",
+                  "value": "9",
+                  "type": "text",
+                  "description": "(optional) ค่าอะไรก็ได้ ยังไงก็ 404"
                 }
               ]
             }
