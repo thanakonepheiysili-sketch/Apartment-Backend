@@ -25,6 +25,16 @@ function validateNumbers(body) {
 // keeps the stored value when the field is left out of the request
 const keep = (value, current) => (value !== undefined ? Number(value) : current);
 
+// amenity amount is optional, but a count only makes sense as a positive whole number.
+// Returns { value } on success, { error } on a bad one; "" counts as "not sent".
+function parseAmount(raw) {
+  if (raw === undefined || raw === "") return { value: null };
+  const n = Number(raw);
+  if (!Number.isInteger(n) || n < 1)
+    return { error: "amount must be a positive integer" };
+  return { value: n };
+}
+
 function deleteFile(relPath) {
   if (!relPath) return;
   const full = path.join(uploadDir, path.basename(relPath));
@@ -40,7 +50,7 @@ function deleteUploaded(req) {
 // [GET] /api/admin/rooms -> every card field + images + amenities
 router.get("/", auth, (req, res) => {
   const imgStmt = db.prepare("SELECT path FROM room_images WHERE room_id = ?");
-  const amenityStmt = db.prepare("SELECT id, icon, name FROM room_amenities WHERE room_id = ?");
+  const amenityStmt = db.prepare("SELECT id, icon, name, amount FROM room_amenities WHERE room_id = ?");
   const rooms = db
     .prepare(
       `SELECT id, cover, code, name, descriptions, address, price, size, bedrooms, bathrooms,
@@ -209,7 +219,7 @@ router.delete("/:id", auth, (req, res) => {
 // ----- Amenities — one icon + label at a time, kept out of the room multipart -----
 
 // [POST] /api/admin/rooms/:id/amenities  (multipart/form-data)
-// field: name   file: icon (1)
+// fields: name, amount (optional)   file: icon (1)
 router.post("/:id/amenities", auth, (req, res) => {
   iconUpload(req, res, (err) => {
     if (err) return res.status(400).json({ success: false, message: err.message });
@@ -228,11 +238,66 @@ router.post("/:id/amenities", auth, (req, res) => {
       return res.status(400).json({ success: false, message: "name is required" });
     }
 
-    const info = db
-      .prepare("INSERT INTO room_amenities (room_id, icon, name) VALUES (?, ?, ?)")
-      .run(room.id, icon, name);
+    const amount = parseAmount(req.body.amount);
+    if (amount.error) {
+      deleteFile(icon);
+      return res.status(400).json({ success: false, message: amount.error });
+    }
 
-    res.status(201).json({ success: true, data: { id: info.lastInsertRowid, icon, name } });
+    const info = db
+      .prepare("INSERT INTO room_amenities (room_id, icon, name, amount) VALUES (?, ?, ?, ?)")
+      .run(room.id, icon, name, amount.value);
+
+    res.status(201).json({
+      success: true,
+      data: { id: info.lastInsertRowid, icon, name, amount: amount.value },
+    });
+  });
+});
+
+// [PUT] /api/admin/rooms/:id/amenities/:amenityId  (multipart/form-data)
+// fields: name, amount   file: icon (1) — all optional, left-out fields keep their value
+router.put("/:id/amenities/:amenityId", auth, (req, res) => {
+  iconUpload(req, res, (err) => {
+    if (err) return res.status(400).json({ success: false, message: err.message });
+
+    const newIcon = req.file ? "/uploads/" + req.file.filename : null;
+
+    // room_id in the WHERE is the ownership check: an amenity of another room is a 404 here
+    const amenity = db
+      .prepare("SELECT * FROM room_amenities WHERE id = ? AND room_id = ?")
+      .get(req.params.amenityId, req.params.id);
+    if (!amenity) {
+      deleteFile(newIcon);
+      return res.status(404).json({ success: false, message: "Amenity not found" });
+    }
+
+    const name = req.body.name !== undefined ? String(req.body.name).trim() : amenity.name;
+    if (!name) {
+      deleteFile(newIcon);
+      return res.status(400).json({ success: false, message: "name is required" });
+    }
+
+    const parsed = parseAmount(req.body.amount);
+    if (parsed.error) {
+      deleteFile(newIcon);
+      return res.status(400).json({ success: false, message: parsed.error });
+    }
+    // "not sent" keeps the stored count instead of wiping it
+    const amount = req.body.amount === undefined || req.body.amount === ""
+      ? amenity.amount
+      : parsed.value;
+
+    let icon = amenity.icon;
+    if (newIcon) {
+      deleteFile(amenity.icon);
+      icon = newIcon;
+    }
+
+    db.prepare("UPDATE room_amenities SET icon = ?, name = ?, amount = ? WHERE id = ?")
+      .run(icon, name, amount, amenity.id);
+
+    res.json({ success: true, data: { id: amenity.id, icon, name, amount } });
   });
 });
 

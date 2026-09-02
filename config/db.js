@@ -42,11 +42,12 @@ CREATE TABLE IF NOT EXISTS room_images (        -- max 3 per room (enforced in c
   path TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS room_amenities (     -- icon + label, managed one at a time
+CREATE TABLE IF NOT EXISTS room_amenities (     -- icon + label + count, managed one at a time
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   room_id INTEGER NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
   icon TEXT,                                    -- uploaded icon path
-  name TEXT NOT NULL
+  name TEXT NOT NULL,
+  amount INTEGER                                -- how many of it the room has, e.g. 2 air conditioners
 );
 
 CREATE TABLE IF NOT EXISTS contacts (        -- single row, powers the About Us block
@@ -187,6 +188,10 @@ addColumnIfMissing("rooms", "bedrooms", "INTEGER");
 addColumnIfMissing("rooms", "bathrooms", "INTEGER");
 addColumnIfMissing("rooms", "phone", "TEXT");
 addColumnIfMissing("rooms", "whatsapp", "TEXT");
+
+// room_amenities — the add-amenity form now asks how many of each item the room has.
+// Nullable on purpose: amenities added before this column existed keep a NULL amount.
+addColumnIfMissing("room_amenities", "amount", "INTEGER");
 
 // promotions are advertised through banners now, so the per-room discount is gone
 dropColumnIfExists("rooms", "discount_price");

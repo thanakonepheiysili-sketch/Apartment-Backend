@@ -71,7 +71,7 @@ Uploaded files are served from `/uploads/<filename>`, and every stored image pat
 | `users` | Admin / owner accounts | `phone` (UNIQUE), `password` (bcrypt), `role` `admin`\|`owner`, `create_date` |
 | `rooms` | Rooms shown on the website | `cover`, `code`, `name`, `descriptions`, `address`, `price`, `size`, `bedrooms`, `bathrooms`, `phone`, `whatsapp`, `roomType` (0\|1), `status` (0 = not paid, 1 = paid), `available`, `create_date` |
 | `room_images` | Gallery, max 3 per room (enforced in code) | `room_id` → rooms **CASCADE**, `path` |
-| `room_amenities` | Amenity icon + label per room | `room_id` → rooms **CASCADE**, `icon`, `name` |
+| `room_amenities` | Amenity icon + label + count per room | `room_id` → rooms **CASCADE**, `icon`, `name`, `amount` (nullable) |
 | `contacts` | Single About Us row | `tel`, `email`, `address`, `link` (map link) |
 | `tenants` | Current tenant, one per room | `room_id` **UNIQUE** → rooms **CASCADE**, `name`, `lastname`, `tel`, `link` |
 | `leases` | Lease dates, one per room | `room_id` **UNIQUE** → rooms **CASCADE**, `startDate`, `endDate` (YYYY-MM-DD) |
@@ -184,11 +184,14 @@ Send as `multipart/form-data`.
 | PUT | `/api/admin/rooms/:id` | All fields optional |
 | DELETE | `/api/admin/rooms/:id` | Deletes the room, its images, amenities, tenant, lease, bill — and every uploaded file |
 
-**Amenities** are managed one at a time rather than stuffed into the room multipart:
+**Amenities** are managed one at a time rather than stuffed into the room multipart.
+`amount` is how many of the item the room has (e.g. 2 air conditioners) — optional, but a
+positive whole number when sent; anything else is a `400`, and leaving it out stores `NULL`:
 
 | Method | Endpoint | Body |
 |---|---|---|
-| POST | `/api/admin/rooms/:id/amenities` | `multipart`: file `icon` ×1 + text `name` (required). Unknown room → `404` |
+| POST | `/api/admin/rooms/:id/amenities` | `multipart`: file `icon` ×1 + text `name` (required) + `amount` (optional). Unknown room → `404` |
+| PUT | `/api/admin/rooms/:id/amenities/:amenityId` | `multipart`, same fields — **all optional**. A new `icon` replaces and deletes the old file. `404` if the amenity does not belong to that room |
 | DELETE | `/api/admin/rooms/:id/amenities/:amenityId` | Deletes the row **and** the icon file. `404` if the amenity does not belong to that room |
 
 ### 4. Banners

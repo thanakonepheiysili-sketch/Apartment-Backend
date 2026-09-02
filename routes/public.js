@@ -55,7 +55,7 @@ router.get("/rooms/:id", (req, res) => {
     .map((i) => i.path);
 
   const amenities = db
-    .prepare("SELECT id, icon, name FROM room_amenities WHERE room_id = ?")
+    .prepare("SELECT id, icon, name, amount FROM room_amenities WHERE room_id = ?")
     .all(room.id);
 
   const contact = db.prepare("SELECT tel, link FROM contacts LIMIT 1").get() || {};
